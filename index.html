@@ -1,0 +1,161 @@
+	<!DOCTYPE html>
+	<html>
+	<head>
+		<title>Ashley Nguyen Final Project</title>	
+		<style>
+			text { 
+				font-family: Arial; 
+				font-size: 15px;
+			}
+			p{
+				font-family: Arial;
+				font-size: 15px;
+				padding-left: 100px;
+				padding-right: 100px;
+				margin-bottom: 100px;
+			}
+		</style>
+	</head>
+	<body>
+
+		<svg id="main" width="1000" height="25">
+			<text id='label' x='475' y='20'>Students Test Score Performance - Reading and Writing</text>
+		</svg>
+
+		<script src="https://d3js.org/d3.v4.js"></script>
+		<!-- Create a div where the graph will take place -->
+		<div id="my_dataviz"></div>
+
+	<script>
+	
+	// set the dimensions and margins of the graph
+	var margin = {top: 10, right: 30, bottom: 40, left: 125},
+		width = 1250 - margin.left - margin.right,
+		height = 520 - margin.top - margin.bottom;
+
+	// append the svg object to the body of the page
+	var Svg = d3.select("#my_dataviz")
+	  .append("svg")
+		.attr("width", width + margin.left + margin.right)
+		.attr("height", height + margin.top + margin.bottom)
+	  .append("g")
+		.attr("transform",
+			  "translate(" + margin.left + "," + margin.top + ")")
+
+	var tooltip = d3.select("#my_dataviz")
+	   .append("xhtml:div")
+	   .style("opacity", 0)
+	   .attr("class", "tooltip")
+	   .style("background-color", "white")
+	   .style("border", "solid")
+	   //.style("border-width", "1px")
+	   //.style("border-radius", "5px")
+	   .style("padding", "10px")
+
+	//Read the data
+	d3.csv("StudentsPerformance.csv", function(data) {
+
+
+	  // Add X axis
+	  var x = d3.scaleLinear()
+		.domain([0,100])
+		.range([ 0, width ])
+	  Svg.append("g")
+		.attr("transform", "translate(0," + height + ")")
+		.call(d3.axisBottom(x).tickSize(-height*1.3).ticks(10))
+		//.call(d3.svg.axis().scale(xScale).orient('bottom'))
+		.select(".domain").remove()
+
+	  // Add Y axis
+	  var y = d3.scaleLinear()
+		.domain([0, 100])
+		.range([ height, 0])
+		.nice()
+	  Svg.append("g")
+		.call(d3.axisLeft(y).tickSize(-width*1.3).ticks(10))
+		//.call(d3.svg.axis().scale(yScale).orient('left'))
+		.select(".domain").remove()
+
+	  // Customization
+	  //Svg.selectAll(".tick line").attr("stroke", "#EBEBEB")
+
+	  // Add X axis label:
+	  Svg.append("text")
+		  .attr("text-anchor", "middle")
+		  .attr('transform', 'translate(' + (width/2))
+		  .attr("x", width/2)
+		  .attr("y", height + margin.top + 25)
+		  .text("Writing Score");
+
+	  // Y axis label:
+	  Svg.append("text")
+		  .attr("text-anchor", "middle")
+		  .attr('transform', 'translate(' + (-40) + ',' + (height/2) + ')')
+		  .attr("x", -margin.top-25)
+		  .text("Reading Score")
+
+	  // Color scale: give me a students test score, I return a color
+	  var color = d3.scaleOrdinal()
+		//.domain(["math_score", "reading_score", "writing_score" ])
+		//.range([ "#402D54", "#D18975", "#8FD175"])
+		.domain(["female", "male" ])
+		.range([ "orange", "blue"])
+
+	  // Add dots
+	  Svg.append('g')
+		.selectAll("circle")
+		.data(data)
+		.enter()
+		.append("circle")
+			.attr("r", '5px')
+			.attr("cx", function (d) { return x(d.writing_score); } )
+			.attr("cy", function (d) { return y(d.reading_score); } )
+			.attr('id', function(d) { return 'abc' + d.id; } )
+			.style("fill", function (d) { return color(d.gender); } )
+		  
+			// Add interaction events
+			// ======================
+			Svg.selectAll('circle')
+				.on('mouseover', function(d) 
+				{
+					d3.select('#abc' + d.id)
+						.style('fill', 'red')
+						.attr('r', '10px')
+					tooltip
+						.style("opacity", 1)
+						.html("This student is a " + d.gender + " with a Writing score of " + d.writing_score + " and a Reading score of " + d.reading_score + ".")
+						//.style("left", (d3.mouse(this)[0]+90) + "px") // It is important to put the +90: other wise the tooltip is exactly where the point is an it creates a weird effect
+						//.style("top", (d3.mouse(this)[1]) + "px")
+						.style("top", (event.pageY-10)+"px").style("left",(event.pageX+10)+"px");
+					// move brushed circle so that it's on top
+					this.parentNode.appendChild(this);
+
+				})
+				
+				Svg.selectAll('circle')
+				.on('mouseout', function(d) {
+					d3.select('#abc' + d.id)
+						.style('fill', color(d.gender))
+						.attr('r', '5px')
+					tooltip
+						.transition()
+						.duration(200)
+						.style("opacity", 0);
+				})
+	});
+
+	</script>
+
+
+	<p> 
+		To come to this final visualization of this data, I had to go through a design process. Looking at the Students Performance dataset I found on <a href= https://www.kaggle.com/spscientist/students-performance-in-exams/version/1?select=StudentsPerformance.csv> Kaggle</a>, I had to decide which parts of the dataset I wanted to represent through my visualization. There were many avenues that I could have gone, for instance, comparing each student by their math, reading, and writing test scores, comparing students by their race/ethnicity, comparing students by their parental level of education, and so on. Ultimately, I decided to compare the student’s reading and writing test score performance and sort it by their gender because this was much more straightforward to me in understanding, and I felt that this would lead me to creating the best representation of the dataset. After deciding on the actual data that I wanted to visualize, next I had to decide on what kind of graph/chart/visualization I needed for it. Since there are 1000 entries in the Students Performance dataset, I opted into using a scatterplot. At first, I considered making three separate scatterplots to represent math, reading, and writing test scores, but after testing this strategy in Excel as well as Tableau, I realized that all of the test scores had similar slopes, so it would be difficult to distinguish with the naked eye how the scores differ across subjects. Additionally, this would have been a lot of extra coding to get everything to correlate with one another. To alleviate this problem, I decided to take on the challenge of figuring out how to graph two similar subjects (reading and writing) on the same scatterplot. This way, it would be easier for the viewer to see if there is a noticeable difference between the subjects as well as the gender’s performance.<br><br>
+		To improve the overall quality, look, and feel of the scatterplot, there were a few features that I added into it to make it easier for the viewer to study. For instance, I read up on how to add a grid to my graph using D3.js because I had so many points to plot, having a grid to fill up the graph would make it much easier for the viewer to process the information they see on the graph rather than guessing where the points lie on the graph’s axes. Also, the points on the scatterplot are colored as blue for the male gender, and orange for the female gender. Seeing the points as colors helps the viewer see where differences in test scores may lie, as well as compare how males perform on these tests against females. Additionally, to include a little bit of interaction in my chart, I added a feature that highlights a point in red when the mouse hovers over the datapoint and also displays a tooltip along the bottom of the chart that defines the gender of the student as well as their exact reading and writing test scores. This allowed for more precision to be seen in the dataset and takes out the guesswork of having to estimate the true value of the point being shown on the graph. Finally, I scaled the graph so that both axes go from zero to one hundred because I believe that this scale provided the best zoomed-in view of the datapoints without hiding any information or misconstruing the information shown on the graph in any way.<br><br>
+		The main question that I had from the dataset before creating my visualization was: “How do student’s reading and writing test scores compare across genders?” It was interesting to me to see whether or not test scores did differ across genders, and I was able to find that out in the visualization. If you take a look at the final visualization above, you can see that there is a slight difference between the two colors, blue and orange. The blue points seem to be scattered slightly higher than the orange scattered points are, thus implying that males seem to have higher test scores on average compared to female test-takers. It was also interesting to see how female test-takers has an outlier of the lowest overall reading and writing test score, as well as a perfect score on both the reading and writing tests. You can view this information by hovering over the lowest orange datapoint (towards the bottom left corner of the graph) as well as hovering over the highest orange datapoint (towards the very top right of the graph). Though no assumptions should be made about the overall performance of either gender, it is interesting to see through this graph that the distribution of points does differ across genders.<br><br>
+		Link to Youtube Video: <a href = "https://youtu.be/53uEirISEdo">https://youtu.be/53uEirISEdo</a>
+	</p>
+	
+	
+	</body>
+
+
+	</html>
